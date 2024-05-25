@@ -1,25 +1,51 @@
 const http = require("http");
 const fs = require("fs");
 
-let reqApiCount = 0;
+const delay = (ms) => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+};
 
-const server = http.createServer((request, response) => {
+const readFile = (path) => {
+    return new Promise((resolve, reject) => {
+        fs.readFile(path, (error, data) => {
+            if (error) reject("something went wrong");
+            else resolve(data);
+        });
+    });
+};
+
+const server = http.createServer(async (request, response) => {
     switch (request.url) {
-        case "/favicon.ico":
-            console.log(request.url);
-            response.writeHead(200, { "Content-Type": "image/x-icon" });
-            fs.createReadStream("favicon.ico").pipe(response);
+        case "/favicon.ico": {
+            response.setHeader("Content-Type", "image/x-icon");
+            fs.readFile("./favicon.ico", (error, data) => {
+                if (error) {
+                    response.statusCode = 500;
+                    response.end();
+                } else {
+                    response.end(data);
+                }
+            });
+            break;
+        }
 
+        case "/": {
+            const data = await readFile("pages/index.html");
+            response.end(data);
             break;
-        case "/":
-        case "/students":
-            response.end("List of students");
+        }
+
+        case "/about": {
+            const data = await readFile("pages/about.html");
+            response.end(data);
             break;
-        case "/api":
-            response.end("Muslim Pro API #" + ++reqApiCount);
-            break;
-        default:
+        }
+
+        default: {
             response.end("404 Not Found");
+        }
     }
 });
 
